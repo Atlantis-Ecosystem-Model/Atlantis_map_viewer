@@ -1,0 +1,9 @@
+xarray
+geopandas
+shapely
+pyproj
+numpy
+matplotlib
+dash
+plotly
+scipy

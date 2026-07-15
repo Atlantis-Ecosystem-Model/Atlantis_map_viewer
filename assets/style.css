@@ -1,0 +1,6 @@
+/* Uniform font for the whole app, including Dash-portalled elements
+   (dropdown menus, slider tooltips) that live outside the main layout tree,
+   and Plotly-rendered SVG text (titles, axes, legends, hover labels). */
+html, body, * {
+    font-family: "Arial Narrow", Helvetica, Arial, sans-serif !important;
+}
