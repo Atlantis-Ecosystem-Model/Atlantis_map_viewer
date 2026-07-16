@@ -35,6 +35,25 @@ COLORSCALE = "Viridis"
 PROFILE_HEIGHT = 560  # profile plot / vertical layer slider are sized to match
 FONT_FAMILY = '"Arial Narrow", Helvetica, Arial, sans-serif'
 
+# Plot chrome colours, matched to the panel/card theme in assets/style.css
+# (modelled on MT-Hack/frontend's muted blue-grey design language) so the
+# Plotly figures read as part of the same interface rather than a bolt-on.
+TEXT_COLOR = "#1c2733"
+HEADING_COLOR = "#4a5b6b"
+GRID_COLOR = "#eef2f5"
+LINE_COLOR = "#2c6e9b"
+
+
+def _base_layout(title, height):
+    return dict(
+        title=dict(text=title, font=dict(size=14, color=HEADING_COLOR)),
+        height=height,
+        paper_bgcolor="#ffffff",
+        plot_bgcolor="#ffffff",
+        font=dict(family=FONT_FAMILY, color=TEXT_COLOR),
+        hoverlabel=dict(font=dict(family=FONT_FAMILY)),
+    )
+
 
 def build_variable_options(ao: AtlantisOutput):
     names = sorted(ao.variables(), key=lambda n: (ao.var_meta(n)["bmtype"], n))
@@ -136,13 +155,10 @@ def make_map_figure(ao: AtlantisOutput, varname, t_index, layer_index, layer_typ
         title += f" | {layer_type} layer {layer_index} [{ao.depth_label(t_index, selected_box, layer_index, layer_type)}]"
 
     fig.update_layout(
-        title=title,
+        **_base_layout(title, height=650),
         xaxis=dict(visible=False),
         yaxis=dict(visible=False, scaleanchor="x", scaleratio=1),
         margin=dict(l=10, r=10, t=60, b=10),
-        height=650,
-        font=dict(family=FONT_FAMILY),
-        hoverlabel=dict(font=dict(family=FONT_FAMILY)),
     )
     return fig
 
@@ -151,7 +167,7 @@ def make_profile_figure(ao: AtlantisOutput, varname, t_index, box_index, layer_t
                          xmin=None, xmax=None):
     fig = go.Figure()
     if not ao.is_layered(varname):
-        fig.update_layout(title=f"{varname} has no depth dimension", height=height, font=dict(family=FONT_FAMILY))
+        fig.update_layout(**_base_layout(f"{varname} has no depth dimension", height))
         return fig
     mids, values, bounds = ao.profile(varname, t_index, box_index, layer_type)
     step_x = np.empty(2 * len(values))
@@ -160,19 +176,16 @@ def make_profile_figure(ao: AtlantisOutput, varname, t_index, box_index, layer_t
     step_y[1::2] = bounds[1:]
     step_x[0::2] = values
     step_x[1::2] = values
-    fig.add_trace(go.Scatter(x=step_x, y=step_y, mode="lines+markers"))
+    fig.add_trace(go.Scatter(x=step_x, y=step_y, mode="lines+markers", line=dict(color=LINE_COLOR)))
     meta = ao.var_meta(varname)
-    xaxis = dict(title=f"{meta['long_name']} ({meta['units']})")
+    xaxis = dict(title=f"{meta['long_name']} ({meta['units']})", gridcolor=GRID_COLOR, zerolinecolor=GRID_COLOR)
     if xmin is not None and xmax is not None:
         xaxis["range"] = [xmin, xmax]
     fig.update_layout(
-        title=f"Profile | {ao.box_labels[box_index]} | {ao.date_label(t_index)}",
+        **_base_layout(f"Profile | {ao.box_labels[box_index]} | {ao.date_label(t_index)}", height),
         xaxis=xaxis,
-        yaxis_title="Depth (m)",
-        height=height,
+        yaxis=dict(title="Depth (m)", gridcolor=GRID_COLOR, zerolinecolor=GRID_COLOR),
         margin=dict(l=60, r=20, t=40, b=40),
-        font=dict(family=FONT_FAMILY),
-        hoverlabel=dict(font=dict(family=FONT_FAMILY)),
     )
     return fig
 
@@ -181,23 +194,20 @@ def make_timeseries_figure(ao: AtlantisOutput, varname, box_index, layer_index, 
                             ymin=None, ymax=None):
     times, values = ao.timeseries(varname, box_index, layer_index, layer_type)
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=times, y=values, mode="lines"))
-    fig.add_vline(x=times[t_index])
+    fig.add_trace(go.Scatter(x=times, y=values, mode="lines", line=dict(color=LINE_COLOR)))
+    fig.add_vline(x=times[t_index], line=dict(color=HEADING_COLOR))
     meta = ao.var_meta(varname)
     title = f"Time series | {ao.box_labels[box_index]}"
     if ao.is_layered(varname):
         title += f" | {layer_type} layer {layer_index}"
-    yaxis = dict(title=f"{meta['long_name']} ({meta['units']})")
+    yaxis = dict(title=f"{meta['long_name']} ({meta['units']})", gridcolor=GRID_COLOR, zerolinecolor=GRID_COLOR)
     if ymin is not None and ymax is not None:
         yaxis["range"] = [ymin, ymax]
     fig.update_layout(
-        title=title,
-        xaxis_title="Time",
+        **_base_layout(title, height=350),
+        xaxis=dict(title="Time", gridcolor=GRID_COLOR, zerolinecolor=GRID_COLOR),
         yaxis=yaxis,
-        height=350,
         margin=dict(l=60, r=20, t=40, b=40),
-        font=dict(family=FONT_FAMILY),
-        hoverlabel=dict(font=dict(family=FONT_FAMILY)),
     )
     return fig
 
@@ -212,15 +222,14 @@ def scale_controls(prefix: str):
                 options=[{"label": "Autoscale", "value": "auto"}],
                 value=["auto"],
                 inline=True,
-                style={"display": "inline-block", "marginRight": "12px"},
+                style={"display": "inline-block"},
             ),
-            html.Label("Min", style={"marginRight": "4px"}),
-            dcc.Input(id=f"{prefix}-min", type="number", disabled=True,
-                      style={"width": "90px", "marginRight": "10px"}),
-            html.Label("Max", style={"marginRight": "4px"}),
+            html.Label("Min"),
+            dcc.Input(id=f"{prefix}-min", type="number", disabled=True, style={"width": "90px"}),
+            html.Label("Max"),
             dcc.Input(id=f"{prefix}-max", type="number", disabled=True, style={"width": "90px"}),
         ],
-        style={"marginBottom": "4px"},
+        className="scale-controls",
     )
 
 
@@ -235,19 +244,20 @@ def build_app(ao: AtlantisOutput) -> Dash:
 
     app.layout = html.Div(
         [
-            html.H2("Atlantis Output Viewer"),
+            html.H2("Atlantis Output Viewer", className="app-title"),
             html.Div(
                 [
                     html.Div(
                         [
-                            html.Label("Variable"),
+                            html.Label("Variable", className="section-title"),
                             dcc.Dropdown(id="var-dd", options=var_options, value=default_var, clearable=False),
                         ],
-                        style={"width": "380px", "display": "inline-block", "marginRight": "20px"},
+                        className="control-group",
+                        style={"width": "380px"},
                     ),
                     html.Div(
                         [
-                            html.Label("Layer type"),
+                            html.Label("Layer type", className="section-title"),
                             dcc.RadioItems(
                                 id="layertype-radio",
                                 options=[{"label": "Water column", "value": "wc"}]
@@ -256,40 +266,52 @@ def build_app(ao: AtlantisOutput) -> Dash:
                                 inline=True,
                             ),
                         ],
-                        style={"display": "inline-block", "marginRight": "20px"},
+                        className="control-group",
                     ),
                     html.Div(
                         [
-                            html.Label("Selected box"),
+                            html.Label("Selected box", className="section-title"),
                             dcc.Dropdown(id="box-dd", options=box_options, value=0, clearable=False),
                         ],
-                        style={"width": "160px", "display": "inline-block"},
+                        className="control-group",
+                        style={"width": "160px"},
                     ),
-                ]
+                ],
+                className="panel controls-row",
             ),
             html.Div(
                 [
                     html.Div(
                         [
-                            scale_controls("map"),
-                            dcc.Graph(id="map-graph"),
-                            scale_controls("ts"),
-                            dcc.Graph(id="timeseries-graph"),
+                            html.Div(
+                                [scale_controls("map"), dcc.Graph(id="map-graph")],
+                                className="graph-card",
+                            ),
+                            html.Div(
+                                [scale_controls("ts"), dcc.Graph(id="timeseries-graph")],
+                                className="graph-card",
+                            ),
                             html.Div(
                                 [
-                                    html.Label(id="time-label"),
-                                    html.Button("Play", id="play-btn", n_clicks=0, style={"marginLeft": "20px"}),
-                                ]
+                                    html.Div(
+                                        [
+                                            html.Label(id="time-label", className="section-title"),
+                                            html.Button("Play", id="play-btn", n_clicks=0),
+                                        ],
+                                        className="time-row",
+                                    ),
+                                    dcc.Slider(id="time-slider", min=0, max=ao.ntime - 1, step=1, value=0,
+                                               marks=build_time_marks(ao), tooltip={"placement": "bottom"}),
+                                    dcc.Interval(id="play-interval", interval=400, disabled=True),
+                                ],
+                                className="panel",
                             ),
-                            dcc.Slider(id="time-slider", min=0, max=ao.ntime - 1, step=1, value=0,
-                                       marks=build_time_marks(ao), tooltip={"placement": "bottom"}),
-                            dcc.Interval(id="play-interval", interval=400, disabled=True),
                         ],
                         style={"width": "55%", "display": "inline-block", "verticalAlign": "top"},
                     ),
                     html.Div(
                         [
-                            html.Label("Layer", style={"fontWeight": "bold"}),
+                            html.Label("Layer", className="section-title"),
                             html.Div(
                                 dcc.Slider(
                                     id="layer-slider", min=0, max=max(ao.wcnz - 1, 0), step=1, value=0,
@@ -298,22 +320,26 @@ def build_app(ao: AtlantisOutput) -> Dash:
                                 ),
                                 style={"height": f"{PROFILE_HEIGHT}px", "marginTop": "10px"},
                             ),
-                            html.Div(id="layer-label", style={"width": "110px", "fontSize": "12px", "marginTop": "10px"}),
+                            html.Div(id="layer-label", className="layer-depth-label"),
                         ],
-                        style={"width": "130px", "display": "inline-block", "verticalAlign": "top", "textAlign": "center"},
+                        className="slider-card",
+                        style={"width": "130px", "display": "inline-block", "verticalAlign": "top",
+                               "marginLeft": "16px"},
                     ),
                     html.Div(
                         [
-                            scale_controls("profile"),
-                            dcc.Graph(id="profile-graph"),
+                            html.Div(
+                                [scale_controls("profile"), dcc.Graph(id="profile-graph")],
+                                className="graph-card",
+                            ),
                         ],
-                        style={"width": "30%", "display": "inline-block", "verticalAlign": "top"},
+                        style={"width": "30%", "display": "inline-block", "verticalAlign": "top",
+                               "marginLeft": "16px"},
                     ),
                 ],
-                style={"marginTop": "10px"},
             ),
         ],
-        style={"fontFamily": FONT_FAMILY},
+        className="app-root",
     )
 
     @app.callback(

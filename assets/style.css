@@ -1,6 +1,161 @@
-/* Uniform font for the whole app, including Dash-portalled elements
-   (dropdown menus, slider tooltips) that live outside the main layout tree,
-   and Plotly-rendered SVG text (titles, axes, legends, hover labels). */
+/* Visual theme modelled on MT-Hack/frontend's design language (plain CSS,
+   no framework): a light neutral page background, white bordered "panel"
+   cards with rounded corners, a muted blue-grey text hierarchy, a single
+   accent blue for interactive controls, and compact 12-14px type. Font
+   family is kept as Arial Narrow/Helvetica per earlier request rather than
+   MT-Hack's system-ui stack; everything else (colour, spacing, panel/card
+   treatment, buttons, sliders) follows its look. */
+
+:root {
+    --bg: #f6f8fa;
+    --panel-bg: #ffffff;
+    --border: #e2e8ef;
+    --border-strong: #cdd6df;
+    --text: #1c2733;
+    --muted: #6b7a89;
+    --muted2: #8a98a6;
+    --heading: #4a5b6b;
+    --accent: #2c6e9b;
+    --accent-dark: #1f7a43;
+    --danger: #c0392b;
+    --radius: 8px;
+    --radius-sm: 5px;
+}
+
 html, body, * {
     font-family: "Arial Narrow", Helvetica, Arial, sans-serif !important;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.app-root { padding: 18px 22px 30px; max-width: 1600px; margin: 0 auto; }
+
+.app-title {
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 2px 0 16px;
+}
+
+.section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--heading);
+    font-weight: 600;
+    margin: 0 0 6px;
+    display: block;
+}
+
+.panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 2px rgba(20, 30, 40, .04);
+}
+
+.graph-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 10px 4px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 2px rgba(20, 30, 40, .04);
+}
+
+.slider-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 10px;
+    text-align: center;
+}
+
+.controls-row { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-end; }
+.control-group { display: flex; flex-direction: column; gap: 4px; }
+
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+
+.scale-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 2px 8px;
+    font-size: 12px;
+    color: var(--muted);
+}
+.scale-controls label { margin: 0; font-size: 12px; color: var(--muted); }
+
+.layer-depth-label {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 10px;
+    min-height: 32px;
+}
+
+.time-row { display: flex; align-items: center; gap: 14px; margin: 6px 0 2px; }
+.time-row .section-title { margin: 0; }
+
+/* buttons */
+button {
+    background: var(--accent);
+    color: #fff;
+    border: 0;
+    border-radius: var(--radius-sm);
+    padding: 7px 14px;
+    font-size: 13px;
+    cursor: pointer;
+}
+button:hover { filter: brightness(1.07); }
+button:disabled { background: #aab6c0; cursor: not-allowed; }
+button.primary { background: var(--accent-dark); font-weight: 600; }
+
+/* native form controls (dcc.Input, dcc.RadioItems, dcc.Checklist) */
+input[type="number"], input[type="text"] {
+    border: 1px solid #ccc;
+    border-radius: var(--radius-sm);
+    padding: 4px 7px;
+    font-size: 13px;
+}
+input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
+label { color: var(--text); }
+
+/* Dash's built-in dropdown component */
+.dash-dropdown-trigger, .dash-dropdown-search-container {
+    border: 1px solid #ccc !important;
+    border-radius: var(--radius-sm) !important;
+    font-size: 13px !important;
+}
+.dash-dropdown-content {
+    border-radius: var(--radius-sm) !important;
+    border: 1px solid var(--border-strong) !important;
+}
+.dash-dropdown-option:hover {
+    background: #eaf1f6 !important;
+}
+
+/* rc-slider (dcc.Slider), retinted to the accent blue */
+.rc-slider-track { background-color: var(--accent) !important; }
+.rc-slider-handle {
+    border-color: var(--accent) !important;
+    opacity: 1 !important;
+}
+.rc-slider-handle:hover, .rc-slider-handle:focus, .rc-slider-handle-dragging {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 4px rgba(44, 110, 155, .15) !important;
+}
+.rc-slider-dot-active { border-color: var(--accent) !important; }
+.rc-slider-tooltip-inner {
+    background: var(--text) !important;
+    border-radius: var(--radius-sm) !important;
 }
